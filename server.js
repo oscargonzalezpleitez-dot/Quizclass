@@ -17,6 +17,18 @@ let bankIdCounter = 1;
 const genPin = () => String(Math.floor(100000 + Math.random() * 900000));
 const genId  = () => String(bankIdCounter++);
 
+// ─── REST: Auth ───────────────────────────────────────────────────────────────
+const TEACHER_PASSWORD = process.env.TEACHER_PASSWORD || "profesor2024";
+
+app.post("/api/auth", (req, res) => {
+  const { password } = req.body;
+  if (password === TEACHER_PASSWORD) {
+    res.json({ ok: true });
+  } else {
+    res.json({ ok: false });
+  }
+});
+
 // ─── REST: Quiz Bank ──────────────────────────────────────────────────────────
 app.get("/api/bank", (req, res) => {
   const list = Object.values(quizBank)
