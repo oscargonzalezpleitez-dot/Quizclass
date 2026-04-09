@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>QuizClass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080812;
+  --surf: #12121f;
+  --surf2: #1a1a2e;
+  --acc: #6d28d9;
+  --acc2: #0ea5e9;
+  --gold: #f59e0b;
+  --green: #10b981;
+  --red: #ef4444;
+  --text: #f0f0ff;
+  --muted: #7070a0;
+  --r: 14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text)}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+
+/* ── screens ── */
+.screen{display:none;width:100%;max-width:520px;flex-direction:column;align-items:center;animation:sl .3s ease}
+.screen.active{display:flex}
+@keyframes sl{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes bc{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-8px)}}
+
+/* ── logo ── */
+.logo{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:2.4rem;line-height:1;letter-spacing:-1px}
+.logo .q{background:linear-gradient(135deg,#a78bfa,#0ea5e9);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo .c{color:var(--gold)}
+
+/* ── card ── */
+.card{background:var(--surf);border:1px solid rgba(109,40,217,.2);border-radius:18px;padding:22px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+
+/* ── buttons ── */
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:13px 20px;border:none;border-radius:11px;font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;cursor:pointer;transition:all .15s;margin-bottom:9px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn:last-child{margin-bottom:0}
+.btn-primary{background:linear-gradient(135deg,#6d28d9,#4c1d95);color:#fff;box-shadow:0 4px 18px rgba(109,40,217,.4)}
+.btn-primary:hover:not(:disabled){box-shadow:0 6px 26px rgba(109,40,217,.6);transform:translateY(-1px)}
+.btn-secondary{background:var(--surf2);color:var(--text);border:1px solid rgba(255,255,255,.09)}
+.btn-green{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
+.btn-danger{background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.07)}
+.btn-sm{padding:7px 13px;font-size:12px;width:auto;margin-bottom:0}
+
+/* ── inputs ── */
+label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:5px}
+input,textarea,select{width:100%;background:var(--surf2);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:10px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:14px;outline:none;margin-bottom:13px;transition:border-color .2s}
+input:focus,textarea:focus{border-color:var(--acc)}
+textarea{resize:vertical;min-height:65px}
+
+/* ── utils ── */
+.text-center{text-align:center}
+.muted{color:var(--muted);font-size:13px}
+.divider{border:none;border-top:1px solid rgba(255,255,255,.06);margin:16px 0}
+.tag{background:var(--surf2);border:1px solid rgba(109,40,217,.3);border-radius:50px;padding:5px 14px;font-size:13px;font-weight:700;animation:pop .3s ease}
+.dots{display:flex;gap:7px;justify-content:center;margin-top:18px}
+.dot{width:9px;height:9px;background:var(--acc);border-radius:50%;animation:bc 1.2s infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+
+/* ── tabs ── */
+.tabs{display:flex;background:var(--surf2);border-radius:11px;padding:3px;margin-bottom:17px;width:100%}
+.tab{flex:1;text-align:center;padding:9px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;color:var(--muted)}
+.tab.active{background:var(--acc);color:#fff}
+
+/* ── question list ── */
+.q-item{background:var(--surf2);border-radius:11px;padding:13px;margin-bottom:7px;display:flex;gap:10px;align-items:flex-start}
+.q-num{font-weight:900;color:var(--acc);min-width:22px;padding-top:1px}
+.q-body{flex:1}
+.q-text{font-weight:700;font-size:14px;margin-bottom:6px}
+.q-opts{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.q-opt{font-size:12px;padding:3px 7px;border-radius:5px;background:var(--surf);color:var(--muted)}
+.q-opt.correct{background:rgba(16,185,129,.18);color:var(--green)}
+.q-meta{font-size:11px;color:var(--muted);margin-top:4px}
+.q-actions{display:flex;flex-direction:column;gap:4px}
+
+/* ── answer grid (host) ── */
+.ans-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:680px;padding:0 16px;margin:0 auto}
+.ans-card{border-radius:13px;padding:16px 14px;color:#fff;font-weight:800;font-size:14px;transition:all .4s}
+.ans-card .shape{font-size:18px;margin-right:6px}
+.ans-bar-wrap{height:5px;background:rgba(255,255,255,.22);border-radius:3px;overflow:hidden;margin-top:8px;display:none}
+.ans-bar-fill{height:100%;background:rgba(255,255,255,.85);border-radius:3px;transition:width .6s}
+.ans-count{font-size:11px;margin-top:3px;opacity:.85;display:none}
+
+/* ── student answer buttons ── */
+.opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;width:100%}
+.opt-btn{padding:26px 12px;border-radius:13px;border:none;font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;cursor:pointer;color:#fff;transition:all .2s}
+.opt-btn:hover:not(:disabled){transform:scale(1.04)}
+.opt-btn:disabled{cursor:default}
+
+/* ── leaderboard ── */
+.lb-item{display:flex;align-items:center;gap:13px;background:var(--surf2);border-radius:11px;padding:13px 17px;margin-bottom:7px;animation:sl .4s ease both}
+.lb-rank{font-size:20px;width:30px;text-align:center}
+.lb-name{flex:1;font-weight:700;font-size:14px}
+.lb-score{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--gold);font-size:17px}
+
+/* ── PIN display ── */
+.pin-big{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:52px;letter-spacing:8px;color:var(--gold);text-shadow:0 0 40px rgba(245,158,11,.5);text-align:center;margin:10px 0}
+
+/* ── modal ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:100;align-items:center;justify-content:center;padding:16px}
+.modal-bg.open{display:flex}
+.modal{background:var(--surf);border:1px solid rgba(109,40,217,.3);border-radius:18px;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto}
+.modal-title{font-weight:800;font-size:16px;margin-bottom:16px}
+.ans-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.ans-input-wrap{position:relative}
+.ans-input-wrap input{margin-bottom:0;padding-right:68px}
+.mark-btn{position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:800;padding:2px 7px;border-radius:5px;cursor:pointer;border:none;font-family:'Nunito',sans-serif}
+.mark-btn.correct{background:rgba(16,185,129,.2);color:var(--green)}
+.mark-btn.wrong{background:rgba(255,255,255,.06);color:var(--muted)}
+
+/* ── timer bar ── */
+.timer-bar-wrap{height:5px;background:rgba(255,255,255,.2);border-radius:3px;margin-top:10px;overflow:hidden}
+.timer-bar-fill{height:100%;background:var(--gold);border-radius:3px;transition:width 1s linear}
+
+/* ── toast ── */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:9px 22px;border-radius:50px;font-weight:800;font-size:13px;z-index:9999;transition:opacity .3s;opacity:0;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1}
+
+/* ── connection status ── */
+#conn-status{position:fixed;top:12px;right:12px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:50px;z-index:999}
+#conn-status.ok{background:rgba(16,185,129,.15);color:var(--green)}
+#conn-status.bad{background:rgba(239,68,68,.15);color:var(--red)}
+
+/* ── responsive ── */
+@media(max-width:480px){
+  .ans-grid,.opt-grid{grid-template-columns:1fr}
+  .pin-big{font-size:38px;letter-spacing:5px}
+  .logo{font-size:1.9rem}
+}
+</style>
+</head>
+<body>
+
+<div id="conn-status" class="bad">⚡ Conectando...</div>
+
+<!-- ════════════════════ SCREENS ════════════════════ -->
+
+<!-- HOME -->
+<div id="s-home" class="screen active text-center">
+  <div class="logo"><span class="q">Quiz</span><span class="c">Class</span></div>
+  <p class="muted" style="margin:10px 0 36px">Trivias en vivo · Sin límite de alumnos</p>
+  <div style="width:100%;max-width:300px">
+    <button class="btn btn-primary" onclick="go('s-role')">▶ Comenzar</button>
+  </div>
+</div>
+
+<!-- ROLE -->
+<div id="s-role" class="screen text-center">
+  <div class="logo"><span class="q">Quiz</span><span class="c">Class</span></div>
+  <p class="muted" style="margin:8px 0 28px">¿Cuál es tu rol?</p>
+  <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:20px">
+    <div class="card" style="width:155px;cursor:pointer;text-align:center" onclick="go('s-editor')">
+      <div style="font-size:36px;margin-bottom:8px">👩‍🏫</div>
+      <div style="font-weight:800;margin-bottom:4px">Profesor</div>
+      <div class="muted">Crea y controla la trivia</div>
+    </div>
+    <div class="card" style="width:155px;cursor:pointer;text-align:center" onclick="go('s-join')">
+      <div style="font-size:36px;margin-bottom:8px">🎓</div>
+      <div style="font-weight:800;margin-bottom:4px">Alumno</div>
+      <div class="muted">Únete con código PIN</div>
+    </div>
+  </div>
+  <button class="btn btn-ghost" style="max-width:200px" onclick="go('s-home')">← Volver</button>
+</div>
+
+<!-- EDITOR -->
+<div id="s-editor" class="screen" style="max-width:640px;justify-content:flex-start;padding-top:24px">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;width:100%">
+    <button class="btn btn-ghost btn-sm" onclick="go('s-role')">←</button>
+    <div class="logo" style="font-size:1.5rem"><span class="q">Quiz</span><span class="c">Class</span></div>
+  </div>
+  <div class="tabs" id="editor-tabs">
+    <div class="tab active" onclick="edTab('quiz',this)">📝 Preguntas</div>
+    <div class="tab" onclick="edTab('cfg',this)">⚙️ Ajustes</div>
+  </div>
+
+  <!-- Questions tab -->
+  <div id="tab-quiz" style="width:100%">
+    <div id="q-list"></div>
+    <button class="btn btn-secondary" onclick="openModal()">+ Agregar pregunta</button>
+    <hr class="divider">
+    <button class="btn btn-primary" onclick="hostCreate()">🚀 Iniciar trivia</button>
+  </div>
+
+  <!-- Config tab -->
+  <div id="tab-cfg" style="display:none;width:100%">
+    <div class="card">
+      <div style="font-weight:800;color:var(--acc2);margin-bottom:16px">Configuración</div>
+      <label>Nombre de la trivia</label>
+      <input id="cfg-name" value="Mi Trivia">
+      <label>Tiempo por pregunta (segundos)</label>
+      <input id="cfg-time" type="number" value="20" min="5" max="120">
+      <label>Puntos por respuesta correcta</label>
+      <input id="cfg-pts" type="number" value="100" min="10" max="1000">
+    </div>
+  </div>
+</div>
+
+<!-- LOBBY HOST -->
+<div id="s-lobby" class="screen text-center">
+  <div class="logo"><span class="q">Quiz</span><span class="c">Class</span></div>
+  <p class="muted" style="margin:6px 0 14px">Comparte este código con tus alumnos</p>
+  <div class="pin-big" id="lobby-pin">——</div>
+  <p class="muted" style="margin-bottom:20px">Abrir QuizClass → Alumno → ingresar este código</p>
+  <div style="font-size:44px;font-weight:900;color:var(--acc2);line-height:1" id="lobby-count">0</div>
+  <p class="muted" style="margin-bottom:14px">alumnos conectados</p>
+  <div id="lobby-players" style="display:flex;flex-wrap:wrap;gap:7px;justify-content:center;max-height:180px;overflow-y:auto;margin-bottom:20px;width:100%"></div>
+  <div style="width:100%;max-width:300px">
+    <button class="btn btn-green" onclick="hostStart()">▶ Empezar trivia</button>
+    <button class="btn btn-ghost" onclick="hostCancel()">✕ Cancelar</button>
+  </div>
+</div>
+
+<!-- HOST QUESTION -->
+<div id="s-hq" class="screen" style="max-width:720px;justify-content:flex-start;padding:0;width:100%">
+  <div style="background:linear-gradient(135deg,var(--acc),#4c1d95);padding:18px 22px;width:100%;border-radius:0 0 16px 16px">
+    <div class="muted" id="hq-prog" style="color:rgba(255,255,255,.6);font-size:12px;margin-bottom:5px">Pregunta 1 de 5</div>
+    <div style="font-size:19px;font-weight:900;line-height:1.3" id="hq-text">—</div>
+    <div class="timer-bar-wrap"><div class="timer-bar-fill" id="hq-bar" style="width:100%"></div></div>
+    <div style="font-weight:800;font-size:20px;margin-top:5px" id="hq-timer">20s</div>
+  </div>
+  <div style="padding:10px 20px;font-size:13px;color:var(--muted)" id="hq-votes">Esperando respuestas...</div>
+  <div class="ans-grid" id="hq-answers"></div>
+  <div style="text-align:center;padding:18px 16px" id="hq-controls"></div>
+</div>
+
+<!-- RESULTS HOST -->
+<div id="s-results" class="screen text-center">
+  <div class="logo"><span class="q">Quiz</span><span class="c">Class</span></div>
+  <p style="color:var(--acc2);font-weight:700;font-size:16px;margin:8px 0 22px">🏆 Resultados Finales</p>
+  <div id="leaderboard" style="width:100%;max-width:460px"></div>
+  <div style="width:100%;max-width:280px;margin-top:18px">
+    <button class="btn btn-primary" onclick="location.reload()">🔄 Nueva trivia</button>
+  </div>
+</div>
+
+<!-- STUDENT JOIN -->
+<div id="s-join" class="screen text-center">
+  <div class="logo"><span class="q">Quiz</span><span class="c">Class</span></div>
+  <p class="muted" style="margin:8px 0 24px">Ingresa el código de tu profesor</p>
+  <div class="card" style="max-width:360px">
+    <label>Código PIN</label>
+    <input id="j-pin" placeholder="000000" maxlength="6" style="font-size:26px;text-align:center;letter-spacing:7px;font-weight:900" oninput="this.value=this.value.replace(/\D/g,'')">
+    <label>Tu nombre</label>
+    <input id="j-name" placeholder="Ej: María García" maxlength="30">
+    <button class="btn btn-primary" onclick="studentJoin()">Unirme 🚀</button>
+    <button class="btn btn-ghost" onclick="go('s-role')">← Volver</button>
+  </div>
+</div>
+
+<!-- STUDENT WAIT -->
+<div id="s-swait" class="screen text-center">
+  <div class="logo"><span class="q">Quiz</span><span class="c">Class</span></div>
+  <p style="font-size:20px;font-weight:900;margin:16px 0 4px" id="swait-name">¡Hola!</p>
+  <p class="muted">Esperando que el profesor inicie...</p>
+  <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+</div>
+
+<!-- STUDENT ANSWER -->
+<div id="s-sans" class="screen text-center">
+  <div id="sans-q" style="font-size:16px;font-weight:800;padding:16px;background:var(--surf2);border-radius:13px;margin-bottom:20px;width:100%">—</div>
+  <div class="opt-grid" id="sans-opts"></div>
+  <p class="muted" style="margin-top:16px" id="sans-status">Selecciona una respuesta</p>
+</div>
+
+<!-- STUDENT FEEDBACK -->
+<div id="s-sfb" class="screen text-center">
+  <div style="font-size:56px;margin-bottom:10px;animation:pop .4s ease" id="sfb-emoji">✅</div>
+  <div style="font-size:22px;font-weight:900;margin-bottom:7px" id="sfb-text">¡Correcto!</div>
+  <div style="font-size:26px;font-weight:900;color:var(--gold)" id="sfb-pts">+100 pts</div>
+  <div class="muted" style="margin-top:4px" id="sfb-total">Total: 0 pts</div>
+  <p class="muted" style="margin-top:18px">Esperando la siguiente pregunta...</p>
+  <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+</div>
+
+<!-- STUDENT FINAL -->
+<div id="s-sfinal" class="screen text-center">
+  <div class="logo"><span class="q">Quiz</span><span class="c">Class</span></div>
+  <p style="font-size:18px;font-weight:900;margin:12px 0 18px">🎉 ¡Trivia terminada!</p>
+  <div class="card" style="max-width:300px;text-align:center">
+    <div style="font-size:54px;margin-bottom:8px" id="sfinal-medal">🥇</div>
+    <div class="muted" style="font-size:12px;margin-bottom:4px">Tu posición final</div>
+    <div style="font-weight:900;font-size:18px" id="sfinal-name"></div>
+    <hr class="divider">
+    <div style="font-size:26px;font-weight:900;color:var(--gold)" id="sfinal-score">0 pts</div>
+  </div>
+  <div style="width:100%;max-width:280px;margin-top:18px">
+    <button class="btn btn-primary" onclick="location.reload()">Volver al inicio</button>
+  </div>
+</div>
+
+<!-- ════════════════════ MODAL ════════════════════ -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">➕ Nueva pregunta</div>
+    <label>Pregunta</label>
+    <textarea id="m-text" placeholder="Escribe la pregunta aquí..."></textarea>
+    <label>Tiempo (segundos)</label>
+    <input id="m-time" type="number" value="20" min="5" max="120">
+    <label>Respuestas — haz clic en "Marcar" para indicar la correcta</label>
+    <div class="ans-inputs" id="m-answers"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1;margin-bottom:0" onclick="saveQ()">💾 Guardar</button>
+      <button class="btn btn-secondary" style="flex:1;margin-bottom:0" onclick="closeModal()">✕ Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ════════════════════ SCRIPT ════════════════════ -->
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+const COLORS = ["#ef4444","#3b82f6","#f59e0b","#10b981"];
+const SHAPES = ["▲","●","■","★"];
+const MEDALS = ["🥇","🥈","🥉"];
+
+let ws, role, pin, myName, myScore = 0;
+let questions = [
+  {text:"¿Cuál es el planeta más grande del sistema solar?",answers:["Marte","Júpiter","Saturno","Neptuno"],correct:1,time:20},
+  {text:"¿Cuántos huesos tiene el cuerpo humano adulto?",answers:["206","180","256","300"],correct:0,time:15},
+  {text:"¿Qué gas es indispensable para la respiración?",answers:["CO₂","Nitrógeno","Oxígeno","Argón"],correct:2,time:15},
+];
+let editIdx = null, modalAnswers = ["","","",""], modalCorrect = 0;
+let hostTimerInterval, currentTimerDur;
+let answered = false;
+
+// ─── WebSocket ────────────────────────────────────────────────────────────────
+function connect() {
+  const proto = location.protocol === "https:" ? "wss:" : "ws:";
+  ws = new WebSocket(`${proto}//${location.host}`);
+
+  ws.onopen = () => {
+    setStatus(true);
+  };
+
+  ws.onclose = () => {
+    setStatus(false);
+    setTimeout(connect, 3000); // auto-reconnect
+  };
+
+  ws.onerror = () => setStatus(false);
+
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    handleMsg(msg);
+  };
+}
+
+function send(obj) {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+}
+
+function setStatus(ok) {
+  const el = document.getElementById("conn-status");
+  el.className = ok ? "ok" : "bad";
+  el.textContent = ok ? "● Conectado" : "○ Reconectando...";
+}
+
+// ─── Message handler ──────────────────────────────────────────────────────────
+function handleMsg(msg) {
+  const { type } = msg;
+
+  if (type === "host:created") {
+    pin = msg.pin;
+    document.getElementById("lobby-pin").textContent = pin;
+    document.getElementById("lobby-count").textContent = 0;
+    document.getElementById("lobby-players").innerHTML = "";
+    go("s-lobby");
+  }
+
+  else if (type === "lobby:update") {
+    document.getElementById("lobby-count").textContent = msg.players.length;
+    document.getElementById("lobby-players").innerHTML =
+      msg.players.map(n => `<div class="tag">🎓 ${n}</div>`).join("");
+  }
+
+  else if (type === "student:joined") {
+    myName = msg.name;
+    document.getElementById("swait-name").textContent = `¡Hola, ${myName}!`;
+    go("s-swait");
+  }
+
+  else if (type === "question:start") {
+    answered = false;
+    renderStudentQuestion(msg);
+    if (role === "host") renderHostQuestion(msg);
+  }
+
+  else if (type === "votes:update") {
+    if (role === "host") {
+      document.getElementById("hq-votes").textContent =
+        `${msg.totalAnswered} / ${msg.totalPlayers} respondieron`;
+    }
+  }
+
+  else if (type === "question:reveal") {
+    if (role === "host") renderHostReveal(msg);
+    else renderStudentFeedback(msg);
+  }
+
+  else if (type === "quiz:results") {
+    renderResults(msg.leaderboard);
+  }
+
+  else if (type === "quiz:cancelled") {
+    toast("La trivia fue cancelada");
+    setTimeout(() => location.reload(), 2000);
+  }
+
+  else if (type === "error") {
+    toast(msg.msg);
+  }
+}
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+function go(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 2300);
+}
+
+// ─── Editor tabs ──────────────────────────────────────────────────────────────
+function edTab(id, el) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  el.classList.add("active");
+  document.getElementById("tab-quiz").style.display = id === "quiz" ? "" : "none";
+  document.getElementById("tab-cfg").style.display = id === "cfg" ? "" : "none";
+}
+
+// ─── Question list ────────────────────────────────────────────────────────────
+function renderQList() {
+  const el = document.getElementById("q-list");
+  if (!questions.length) {
+    el.innerHTML = '<p class="muted text-center" style="padding:20px">Sin preguntas. ¡Agrega la primera!</p>';
+    return;
+  }
+  el.innerHTML = questions.map((q,i) => `
+    <div class="q-item">
+      <div class="q-num">${i+1}</div>
+      <div class="q-body">
+        <div class="q-text">${q.text}</div>
+        <div class="q-opts">
+          ${q.answers.map((a,ai)=>`<div class="q-opt ${ai===q.correct?"correct":""}">${ai===q.correct?"✓ ":""}${a||"—"}</div>`).join("")}
+        </div>
+        <div class="q-meta">⏱ ${q.time}s</div>
+      </div>
+      <div class="q-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editQ(${i})">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="delQ(${i})">🗑</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function delQ(i) {
+  questions.splice(i,1); renderQList();
+}
+
+// ─── Modal ────────────────────────────────────────────────────────────────────
+function openModal() {
+  editIdx = null;
+  modalAnswers = ["","","",""];
+  modalCorrect = 0;
+  document.getElementById("modal-title").textContent = "➕ Nueva pregunta";
+  document.getElementById("m-text").value = "";
+  document.getElementById("m-time").value = document.getElementById("cfg-time").value || 20;
+  renderModalAnswers();
+  document.getElementById("modal").classList.add("open");
+}
+
+function editQ(i) {
+  editIdx = i;
+  const q = questions[i];
+  modalAnswers = [...q.answers];
+  modalCorrect = q.correct;
+  document.getElementById("modal-title").textContent = "✏️ Editar pregunta";
+  document.getElementById("m-text").value = q.text;
+  document.getElementById("m-time").value = q.time;
+  renderModalAnswers();
+  document.getElementById("modal").classList.add("open");
+}
+
+function renderModalAnswers() {
+  document.getElementById("m-answers").innerHTML = modalAnswers.map((a,i) => `
+    <div class="ans-input-wrap">
+      <input value="${a}" placeholder="Opción ${"ABCD"[i]}" oninput="modalAnswers[${i}]=this.value"
+        style="border-color:${i===modalCorrect?"var(--green)":"rgba(255,255,255,.08)"};background:${i===modalCorrect?"rgba(16,185,129,.08)":"var(--surf2)"}">
+      <button class="mark-btn ${i===modalCorrect?"correct":"wrong"}" onclick="setCorrect(${i})">
+        ${i===modalCorrect?"✓":"Marcar"}
+      </button>
+    </div>
+  `).join("");
+}
+
+function setCorrect(i) { modalCorrect = i; renderModalAnswers(); }
+
+function saveQ() {
+  const text = document.getElementById("m-text").value.trim();
+  const time = parseInt(document.getElementById("m-time").value) || 20;
+  if (!text) { toast("Escribe la pregunta"); return; }
+  if (modalAnswers.filter(a=>a.trim()).length < 2) { toast("Necesitas al menos 2 opciones"); return; }
+  const q = { text, answers: [...modalAnswers], correct: modalCorrect, time };
+  if (editIdx !== null) questions[editIdx] = q; else questions.push(q);
+  closeModal();
+  renderQList();
+  toast("Guardado ✓");
+}
+
+function closeModal() { document.getElementById("modal").classList.remove("open"); }
+
+// ─── HOST actions ─────────────────────────────────────────────────────────────
+function hostCreate() {
+  if (!questions.length) { toast("Agrega al menos una pregunta"); return; }
+  role = "host";
+  send({
+    type: "host:create",
+    name: document.getElementById("cfg-name").value || "Mi Trivia",
+    questions,
+    pointsPerQ: parseInt(document.getElementById("cfg-pts").value) || 100,
+  });
+}
+
+function hostStart() { send({ type: "host:start" }); }
+function hostCancel() { send({ type: "host:cancel" }); location.reload(); }
+
+function renderHostQuestion(msg) {
+  const { currentQ, total, question } = msg;
+  document.getElementById("hq-prog").textContent = `Pregunta ${currentQ+1} de ${total}`;
+  document.getElementById("hq-text").textContent = question.text;
+  document.getElementById("hq-votes").textContent = "Esperando respuestas...";
+  document.getElementById("hq-timer").textContent = question.time + "s";
+
+  // Timer bar
+  clearInterval(hostTimerInterval);
+  currentTimerDur = question.time;
+  let t = question.time;
+  document.getElementById("hq-bar").style.width = "100%";
+  hostTimerInterval = setInterval(() => {
+    t--;
+    document.getElementById("hq-timer").textContent = Math.max(0,t) + "s";
+    document.getElementById("hq-bar").style.width = (Math.max(0,t)/currentTimerDur*100) + "%";
+    if (t <= 0) clearInterval(hostTimerInterval);
+  }, 1000);
+
+  // Answers
+  document.getElementById("hq-answers").innerHTML = question.answers.map((a,i) => `
+    <div class="ans-card" id="ac-${i}" style="background:${COLORS[i]}">
+      <span class="shape">${SHAPES[i]}</span>${a}
+      <div class="ans-bar-wrap" id="ab-${i}"><div class="ans-bar-fill" id="af-${i}" style="width:0%"></div></div>
+      <div class="ans-count" id="acount-${i}"></div>
+    </div>
+  `).join("");
+
+  document.getElementById("hq-controls").innerHTML = `
+    <button class="btn btn-secondary" style="max-width:200px" onclick="send({type:'host:reveal'})">Revelar ya</button>
+  `;
+
+  go("s-hq");
+}
+
+function renderHostReveal(msg) {
+  clearInterval(hostTimerInterval);
+  const { correct, votes, isLast } = msg;
+  const total = Object.values(votes).reduce((a,b)=>a+b,0) || 1;
+
+  document.querySelectorAll(".ans-card").forEach((card,i) => {
+    const cnt = votes[i] || 0;
+    card.style.opacity = i===correct ? "1" : "0.42";
+    card.style.transform = i===correct ? "scale(1.03)" : "scale(1)";
+    card.style.boxShadow = i===correct ? "0 0 28px rgba(16,185,129,.6)" : "none";
+    const bar = document.getElementById(`ab-${i}`);
+    const fill = document.getElementById(`af-${i}`);
+    const count = document.getElementById(`acount-${i}`);
+    if (bar) bar.style.display = "block";
+    if (fill) fill.style.width = (cnt/total*100) + "%";
+    if (count) { count.style.display = "block"; count.textContent = cnt + " respuestas"; }
+  });
+
+  document.getElementById("hq-controls").innerHTML = `
+    <button class="btn btn-green" style="max-width:240px" onclick="send({type:'host:next'})">
+      ${isLast ? "Ver resultados 🏆" : "Siguiente ▶"}
+    </button>
+  `;
+
+  // Leaderboard mini
+  const lb = msg.leaderboard.slice(0,3).map((p,i) => `<span style="margin:0 6px">${MEDALS[i]||""} ${p.name}: ${p.score}</span>`).join(" ");
+  document.getElementById("hq-votes").innerHTML = `<span style="color:var(--gold)">${lb}</span>`;
+}
+
+// ─── STUDENT actions ──────────────────────────────────────────────────────────
+function studentJoin() {
+  const p = document.getElementById("j-pin").value.trim();
+  const n = document.getElementById("j-name").value.trim();
+  if (!p || p.length<4) { toast("Ingresa el código PIN"); return; }
+  if (!n) { toast("Ingresa tu nombre"); return; }
+  role = "student";
+  myName = n;
+  send({ type: "student:join", pin: p, name: n });
+}
+
+function renderStudentQuestion(msg) {
+  if (role !== "student") return;
+  const { question } = msg;
+  document.getElementById("sans-q").textContent = question.text;
+  document.getElementById("sans-status").textContent = "Selecciona una respuesta";
+  document.getElementById("sans-opts").innerHTML = question.answers.map((a,i) => `
+    <button class="opt-btn" id="opt-${i}" style="background:${COLORS[i]}" onclick="studentAnswer(${i})">
+      ${SHAPES[i]} ${a}
+    </button>
+  `).join("");
+  go("s-sans");
+}
+
+function studentAnswer(idx) {
+  if (answered) return;
+  answered = true;
+  document.querySelectorAll(".opt-btn").forEach((b,i) => {
+    b.disabled = true;
+    b.style.opacity = i===idx ? "1" : "0.5";
+    if (i===idx) b.style.boxShadow = "0 0 0 4px white";
+  });
+  document.getElementById("sans-status").textContent = "✅ Respuesta enviada, esperando...";
+  send({ type: "student:answer", idx });
+}
+
+function renderStudentFeedback(msg) {
+  if (role !== "student") return;
+  const myPlayer = msg.players[myName] || {};
+  const correct = myPlayer.answeredIndex === msg.correct;
+  const gained = myPlayer.score - myScore;
+  myScore = myPlayer.score || myScore;
+
+  document.getElementById("sfb-emoji").textContent = correct ? "✅" : "❌";
+  document.getElementById("sfb-text").textContent = correct ? "¡Correcto!" : "Incorrecto";
+  document.getElementById("sfb-pts").textContent = correct ? `+${gained} pts` : "+0 pts";
+  document.getElementById("sfb-total").textContent = `Total: ${myScore} pts`;
+  go("s-sfb");
+}
+
+function renderResults(leaderboard) {
+  if (role === "host") {
+    document.getElementById("leaderboard").innerHTML = leaderboard.slice(0,10).map((p,i) => `
+      <div class="lb-item" style="animation-delay:${i*.07}s">
+        <div class="lb-rank" style="color:${i<3?["var(--gold)","#94a3b8","#b45309"][i]:"var(--muted)"}">${MEDALS[i]||"#"+(i+1)}</div>
+        <div class="lb-name">${p.name}</div>
+        <div class="lb-score">${p.score.toLocaleString()}</div>
+      </div>
+    `).join("") || '<p class="muted text-center">Sin participantes</p>';
+    go("s-results");
+  } else {
+    const rank = leaderboard.findIndex(p=>p.name===myName)+1;
+    document.getElementById("sfinal-medal").textContent = MEDALS[rank-1]||`#${rank}`;
+    document.getElementById("sfinal-name").textContent = myName;
+    document.getElementById("sfinal-score").textContent = `${myScore.toLocaleString()} pts`;
+    go("s-sfinal");
+  }
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+renderQList();
+connect();
+</script>
+</body>
+</html>
