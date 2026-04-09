@@ -6,8 +6,7 @@
 <title>QuizClass</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
-<!-- jsPDF for PDF export -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <style>
 :root {
   --bg:#080812;--surf:#12121f;--surf2:#1a1a2e;
@@ -611,87 +610,71 @@ function renderResults(leaderboard){
 
 function downloadPDF(){
   if(!lastResults){toast("Sin datos para exportar");return;}
-  const {jsPDF}=window.jspdf;
-  const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
-  const W=210, margin=18;
-  let y=20;
+  const {leaderboard,history,quizName}=lastResults;
+  const fecha=new Date().toLocaleDateString('es');
 
-  // Header
-  doc.setFillColor(109,40,217);
-  doc.rect(0,0,W,28,F);
-  doc.setTextColor(255,255,255);
-  doc.setFontSize(18); doc.setFont("helvetica","bold");
-  doc.text("QuizClass — Resultados",margin,12);
-  doc.setFontSize(10); doc.setFont("helvetica","normal");
-  doc.text(`${lastResults.quizName} · ${new Date().toLocaleDateString('es')}`,margin,21);
-  y=36;
+  let html=`<html><head><meta charset="UTF-8">
+  <style>
+    *{box-sizing:border-box}
+    body{font-family:Arial,sans-serif;padding:30px;color:#1a1a2e;max-width:800px;margin:0 auto}
+    .header{background:linear-gradient(135deg,#6d28d9,#4c1d95);color:white;padding:20px 24px;border-radius:12px;margin-bottom:24px}
+    h1{margin:0;font-size:22px}.sub{opacity:.8;font-size:13px;margin-top:4px}
+    h2{color:#6d28d9;font-size:15px;margin:20px 0 10px;border-bottom:2px solid #e5e7eb;padding-bottom:6px}
+    .lb-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:8px;margin-bottom:6px;background:#f5f3ff}
+    .lb-row.top{background:linear-gradient(135deg,#fef3c7,#fde68a)}
+    .rank{font-size:20px;width:32px}.name{flex:1;font-weight:700;font-size:14px}
+    .score{font-weight:800;color:#6d28d9;font-size:16px}
+    .q-block{background:#f8f8ff;border-left:4px solid #6d28d9;border-radius:0 8px 8px 0;padding:12px 14px;margin-bottom:12px;page-break-inside:avoid}
+    .q-title{font-weight:800;font-size:13px;margin-bottom:8px}
+    .opt{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:12px}
+    .opt-label{width:18px;font-weight:700;flex-shrink:0}
+    .opt-text{width:160px;flex-shrink:0}
+    .bar-wrap{flex:1;height:10px;background:#e5e7eb;border-radius:5px;overflow:hidden}
+    .bar-correct{height:100%;background:#10b981;border-radius:5px}
+    .bar-wrong{height:100%;background:#94a3b8;border-radius:5px}
+    .pct{width:55px;text-align:right;font-weight:700;flex-shrink:0}
+    .footer{text-align:center;color:#94a3b8;font-size:11px;margin-top:28px}
+    @media print{body{padding:15px}.header{-webkit-print-color-adjust:exact;print-color-adjust:exact}.lb-row.top{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style></head><body>
+  <div class="header"><h1>QuizClass — Resultados</h1><div class="sub">${quizName} &nbsp;·&nbsp; ${fecha}</div></div>
+  <h2>🏆 Tabla de posiciones</h2>`;
 
-  // Leaderboard
-  doc.setTextColor(30,30,60);
-  doc.setFontSize(13); doc.setFont("helvetica","bold");
-  doc.text("🏆 Tabla de posiciones",margin,y); y+=8;
-
-  lastResults.leaderboard.forEach((p,i)=>{
-    const isTop3=i<3;
-    if(isTop3){
-      doc.setFillColor(i===0?245:i===1?200:180, i===0?195:i===1?200:140, i===0?30:i===1?200:60);
-      doc.roundedRect(margin,y-5,W-margin*2,10,2,2,"F");
-    }
-    doc.setFont("helvetica",isTop3?"bold":"normal");
-    doc.setFontSize(11);
-    doc.setTextColor(30,30,60);
-    const medal=["🥇","🥈","🥉"][i]||"";
-    doc.text(`${i+1}. ${medal} ${p.name}`,margin+3,y+2);
-    doc.text(`${p.score.toLocaleString()} pts`,W-margin-3,y+2,{align:"right"});
-    y+=11;
-    if(y>270){doc.addPage();y=20;}
+  leaderboard.forEach((p,i)=>{
+    const medals=["🥇","🥈","🥉"];
+    html+=`<div class="lb-row ${i<3?"top":""}">
+      <div class="rank">${medals[i]||"#"+(i+1)}</div>
+      <div class="name">${p.name}</div>
+      <div class="score">${p.score.toLocaleString()} pts</div>
+    </div>`;
   });
 
-  y+=6;
-
-  // Per-question summary
-  if(lastResults.history && lastResults.history.length){
-    if(y>240){doc.addPage();y=20;}
-    doc.setFontSize(13); doc.setFont("helvetica","bold");
-    doc.setTextColor(30,30,60);
-    doc.text("📊 Resumen por pregunta",margin,y); y+=8;
-
-    lastResults.history.forEach((h,i)=>{
-      if(y>265){doc.addPage();y=20;}
-      doc.setFillColor(240,240,255);
-      doc.roundedRect(margin,y-4,W-margin*2,7,1,1,"F");
-      doc.setFont("helvetica","bold"); doc.setFontSize(10);
-      doc.setTextColor(60,30,120);
-      const shortQ=h.text.length>70?h.text.slice(0,67)+"...":h.text;
-      doc.text(`P${i+1}: ${shortQ}`,margin+2,y+0.5);
-      y+=8;
-
+  if(history&&history.length){
+    html+=`<h2 style="margin-top:26px">📊 Resumen por pregunta</h2>`;
+    history.forEach((h,i)=>{
       const total=Object.values(h.votes).reduce((a,b)=>a+b,0)||1;
+      html+=`<div class="q-block"><div class="q-title">P${i+1}: ${h.text}</div>`;
       h.answers.forEach((a,ai)=>{
-        if(y>270){doc.addPage();y=20;}
+        if(!a.trim())return;
         const cnt=h.votes[ai]||0;
         const pct=Math.round(cnt/total*100);
         const isC=ai===h.correct;
-        // bar
-        doc.setFillColor(isC?16:220,isC?185:80,isC?129:80);
-        doc.roundedRect(margin+4,y-3,Math.max(2,(W-margin*2-40)*pct/100),5,1,1,"F");
-        doc.setFont("helvetica",isC?"bold":"normal"); doc.setFontSize(9);
-        doc.setTextColor(30,30,60);
-        doc.text(`${isC?"✓":String.fromCharCode(65+ai)}. ${a.slice(0,35)}`,margin+4,y+1);
-        doc.text(`${cnt} (${pct}%)`,W-margin-2,y+1,{align:"right"});
-        y+=7;
-        if(y>270){doc.addPage();y=20;}
+        html+=`<div class="opt">
+          <div class="opt-label" style="color:${isC?"#10b981":"#6b7280"}">${isC?"✓":String.fromCharCode(65+ai)}.</div>
+          <div class="opt-text">${a.length>28?a.slice(0,25)+"...":a}</div>
+          <div class="bar-wrap"><div class="${isC?"bar-correct":"bar-wrong"}" style="width:${pct}%"></div></div>
+          <div class="pct" style="color:${isC?"#10b981":"#6b7280"}">${cnt} (${pct}%)</div>
+        </div>`;
       });
-      y+=4;
+      html+=`</div>`;
     });
   }
+  html+=`<div class="footer">Generado por QuizClass</div></body></html>`;
 
-  // Footer
-  doc.setFontSize(8); doc.setTextColor(150,150,180);
-  doc.text("Generado por QuizClass",W/2,290,{align:"center"});
-
-  doc.save(`QuizClass_${lastResults.quizName.replace(/\s+/g,"_")}_${new Date().toLocaleDateString('es').replace(/\//g,"-")}.pdf`);
-  toast("PDF descargado ✓");
+  const w=window.open("","_blank","width=900,height=700");
+  w.document.write(html);
+  w.document.close();
+  setTimeout(()=>{ w.focus(); w.print(); },600);
+  toast("Abriendo para guardar como PDF ✓");
 }
 
 // ── Student ───────────────────────────────────────────────────────────────────
