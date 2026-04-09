@@ -133,20 +133,36 @@ textarea{resize:vertical;min-height:60px}
 <!-- ROLE -->
 <div id="s-role" class="screen text-center">
   <div class="logo"><span class="q">Quiz</span><span class="c">Class</span></div>
-  <p class="muted" style="margin:8px 0 26px">¿Cuál es tu rol?</p>
-  <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:18px">
-    <div class="card" style="width:152px;cursor:pointer;text-align:center" onclick="go('s-editor')">
-      <div style="font-size:34px;margin-bottom:7px">👩‍🏫</div>
-      <div style="font-weight:800;margin-bottom:3px">Profesor</div>
-      <div class="muted">Crea y controla la trivia</div>
+  <p class="muted" style="margin:8px 0 24px">Bienvenido a QuizClass</p>
+  <div style="width:100%;max-width:320px">
+    <div class="card" style="cursor:pointer;text-align:center;margin-bottom:12px" onclick="go('s-join')">
+      <div style="font-size:40px;margin-bottom:8px">🎓</div>
+      <div style="font-weight:800;font-size:16px;margin-bottom:3px">Soy Alumno</div>
+      <div class="muted">Únete a la trivia con un código PIN</div>
     </div>
-    <div class="card" style="width:152px;cursor:pointer;text-align:center" onclick="go('s-join')">
-      <div style="font-size:34px;margin-bottom:7px">🎓</div>
-      <div style="font-weight:800;margin-bottom:3px">Alumno</div>
-      <div class="muted">Únete con código PIN</div>
-    </div>
+    <button class="btn btn-ghost" style="font-size:12px" onclick="go('s-teacher-login')">
+      🔐 Acceso para profesores
+    </button>
+    <button class="btn btn-ghost" style="margin-top:2px" onclick="go('s-home')">← Volver</button>
   </div>
-  <button class="btn btn-ghost" style="max-width:200px" onclick="go('s-home')">← Volver</button>
+</div>
+
+<!-- TEACHER LOGIN -->
+<div id="s-teacher-login" class="screen text-center">
+  <div class="logo"><span class="q">Quiz</span><span class="c">Class</span></div>
+  <p class="muted" style="margin:8px 0 22px">Acceso exclusivo para profesores</p>
+  <div class="card" style="max-width:320px;width:100%;text-align:center">
+    <div style="font-size:44px;margin-bottom:10px">🔐</div>
+    <label>Contraseña de profesor</label>
+    <input id="teacher-pwd" type="password" placeholder="••••••••"
+      onkeydown="if(event.key==='Enter')checkPassword()"
+      style="text-align:center;font-size:20px;letter-spacing:5px">
+    <div id="pwd-error" style="color:var(--red);font-size:13px;margin:-6px 0 10px;display:none">
+      ❌ Contraseña incorrecta
+    </div>
+    <button class="btn btn-primary" onclick="checkPassword()">Entrar →</button>
+    <button class="btn btn-ghost" onclick="go('s-role');document.getElementById('teacher-pwd').value='';document.getElementById('pwd-error').style.display='none'">← Volver</button>
+  </div>
 </div>
 
 <!-- EDITOR -->
@@ -717,6 +733,31 @@ function renderStudentFeedback(msg){
   document.getElementById("sfb-pts").textContent=correct?`+${gained} pts`:"+0 pts";
   document.getElementById("sfb-total").textContent=`Total: ${myScore} pts`;
   go("s-sfb");
+}
+
+// ── Password ─────────────────────────────────────────────────────────────────
+async function checkPassword(){
+  const pwd = document.getElementById("teacher-pwd").value;
+  if(!pwd){ toast("Escribe la contraseña"); return; }
+  try{
+    const res = await fetch("/api/auth", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({password: pwd})
+    });
+    const data = await res.json();
+    if(data.ok){
+      document.getElementById("teacher-pwd").value="";
+      document.getElementById("pwd-error").style.display="none";
+      go("s-editor");
+    } else {
+      document.getElementById("pwd-error").style.display="block";
+      document.getElementById("teacher-pwd").value="";
+      document.getElementById("teacher-pwd").focus();
+    }
+  } catch {
+    toast("Error de conexión");
+  }
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
