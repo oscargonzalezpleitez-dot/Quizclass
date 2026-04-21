@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>QuizClass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+:root{--bg:#080812;--surf:#12121f;--surf2:#1a1a2e;--acc:#6d28d9;--acc2:#0ea5e9;--gold:#f59e0b;--green:#10b981;--red:#ef4444;--text:#f0f0ff;--muted:#7070a0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text)}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+.screen{display:none;width:100%;max-width:520px;flex-direction:column;align-items:center;animation:sl .3s ease}
+.screen.active{display:flex}
+@keyframes sl{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.logo{font-size:2.2rem;font-weight:900;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.card{background:var(--surf);border-radius:16px;padding:24px;width:100%;margin-bottom:16px;box-shadow:0 4px 24px #0008}
+h2{font-size:1.3rem;font-weight:800;margin-bottom:16px;text-align:center}
+input,textarea,select{width:100%;padding:12px 14px;border-radius:10px;border:2px solid #ffffff18;background:var(--surf2);color:var(--text);font-family:inherit;font-size:1rem;margin-bottom:10px;outline:none;transition:border .2s}
+input:focus,textarea:focus{border-color:var(--acc)}
+textarea{resize:vertical;min-height:80px}
+button{width:100%;padding:13px;border-radius:10px;border:none;font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity .2s,transform .1s}
+button:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff}
+.btn-secondary{background:var(--surf2);color:var(--text);margin-top:8px}
+.btn-danger{background:var(--red);color:#fff;margin-top:8px}
+.btn-green{background:var(--green);color:#fff}
+button:disabled{opacity:.4;cursor:not-allowed}
+.pin-display{font-family:'JetBrains Mono',monospace;font-size:3.5rem;font-weight:700;letter-spacing:.15em;color:var(--gold);text-align:center;padding:16px 0}
+.player-list{list-style:none;width:100%;max-height:220px;overflow-y:auto}
+.player-list li{padding:8px 12px;background:var(--surf2);border-radius:8px;margin-bottom:6px;font-weight:600}
+.q-text{font-size:1.25rem;font-weight:800;text-align:center;margin-bottom:20px;line-height:1.4}
+.answers-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.ans-btn{padding:16px;border-radius:12px;border:none;font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;transition:.2s;width:100%;color:#fff}
+.ans-btn:nth-child(1){background:#7c3aed}.ans-btn:nth-child(2){background:#0891b2}.ans-btn:nth-child(3){background:#b45309}.ans-btn:nth-child(4){background:#065f46}
+.ans-btn:disabled{opacity:.5;cursor:not-allowed}
+.ans-btn.selected{outline:4px solid var(--gold)}
+.ans-btn.correct{background:var(--green)!important;outline:4px solid #fff}
+.ans-btn.wrong{background:var(--red)!important;opacity:.6}
+.timer-bar-wrap{width:100%;height:8px;background:#ffffff18;border-radius:4px;overflow:hidden;margin-bottom:12px}
+.timer-bar{height:100%;background:linear-gradient(90deg,var(--green),var(--gold));transition:width 1s linear;border-radius:4px}
+.leaderboard{list-style:none;width:100%}
+.leaderboard li{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surf2);border-radius:10px;margin-bottom:8px;font-weight:700}
+.lb-rank{font-size:1.3rem;min-width:32px;text-align:center}
+.lb-name{flex:1}
+.lb-score{color:var(--gold);font-size:1.1rem}
+.msg{text-align:center;font-size:.95rem;color:var(--muted);margin-bottom:10px}
+.q-counter{text-align:center;color:var(--muted);font-size:.9rem;margin-bottom:8px}
+.votes-display{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:12px}
+.vote-row{display:flex;align-items:center;gap:8px}
+.vote-label{min-width:100px;font-size:.9rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vote-bar-wrap{flex:1;height:20px;background:#ffffff18;border-radius:4px;overflow:hidden}
+.vote-bar{height:100%;border-radius:4px;transition:width .5s}
+.vote-count{min-width:24px;text-align:right;font-weight:700;font-size:.9rem}
+.quiz-entry{background:var(--surf2);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;transition:background .2s}
+.quiz-entry:hover{background:#ffffff15}
+.quiz-entry h4{font-weight:700;margin-bottom:4px}
+.quiz-entry p{font-size:.85rem;color:var(--muted)}
+.error{color:var(--red);font-size:.85rem;margin-top:-6px;margin-bottom:8px}
+.section-title{font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div id="s-home" class="screen active">
+  <div class="logo">QuizClass 🎓</div>
+  <p style="color:var(--muted);margin-bottom:24px;text-align:center">Trivia en vivo para el aula</p>
+  <div class="card">
+    <button class="btn-primary" onclick="showScreen('s-host-setup')">🎮 Crear quiz (Maestro)</button>
+    <button class="btn-secondary" onclick="showScreen('s-join')" style="margin-top:10px">🙋 Unirse como alumno</button>
+  </div>
+</div>
+<div id="s-host-setup" class="screen">
+  <div class="logo" style="font-size:1.5rem">Configurar Quiz</div>
+  <div class="card">
+    <h2>📝 Crear nuevo quiz</h2>
+    <input id="quiz-name" placeholder="Nombre del quiz" maxlength="40">
+    <input id="points-per-q" type="number" placeholder="Puntos por pregunta (100)" min="10" max="1000" value="100">
+    <div class="section-title">Preguntas (JSON)</div>
+    <textarea id="questions-json" rows="6" placeholder='[{"text":"¿Pregunta?","answers":["A","B","C","D"],"correct":0,"time":20}]'></textarea>
+    <div id="json-error" class="error"></div>
+    <button class="btn-primary" onclick="hostCreate()">Crear sala</button>
+    <button class="btn-secondary" onclick="showScreen('s-home')">Volver</button>
+  </div>
+  <div class="card">
+    <div class="section-title">Quizzes guardados</div>
+    <div id="saved-quizzes"></div>
+    <button class="btn-secondary" style="margin-top:4px" onclick="renderSavedQuizzes()">🔄 Actualizar</button>
+  </div>
+</div>
+<div id="s-host-lobby" class="screen">
+  <div class="logo" style="font-size:1.5rem">Sala de espera</div>
+  <div class="card">
+    <div class="section-title">PIN del quiz</div>
+    <div class="pin-display" id="host-pin">----</div>
+    <p class="msg">Los alumnos ingresan este PIN en QuizClass</p>
+    <div class="section-title" style="margin-top:8px">Jugadores conectados (<span id="player-count">0</span>)</div>
+    <ul class="player-list" id="player-list"></ul>
+    <button class="btn-green" id="btn-start" onclick="hostStart()" disabled style="margin-top:16px">▶ Iniciar quiz</button>
+    <button class="btn-danger" onclick="hostEndEarly()">✕ Cancelar</button>
+  </div>
+</div>
+<div id="s-host-question" class="screen">
+  <div class="card">
+    <div class="q-counter" id="host-q-counter"></div>
+    <div class="timer-bar-wrap"><div class="timer-bar" id="host-timer-bar"></div></div>
+    <div class="q-text" id="host-q-text"></div>
+    <div class="section-title" style="margin-top:4px">Respuestas: <span id="host-vote-count">0</span>/<span id="host-total-players">0</span></div>
+    <div class="votes-display" id="host-votes-display"></div>
+    <button class="btn-secondary" id="btn-reveal" onclick="hostReveal()" style="margin-top:16px">Revelar respuestas</button>
+  </div>
+</div>
+<div id="s-host-reveal" class="screen">
+  <div class="card">
+    <div class="q-counter" id="host-rev-counter"></div>
+    <div class="q-text" id="host-rev-text"></div>
+    <div id="host-rev-answers" class="answers-grid" style="pointer-events:none;margin-bottom:16px"></div>
+    <div class="section-title">Puntuaciones</div>
+    <ul class="leaderboard" id="host-lb" style="max-height:200px;overflow-y:auto"></ul>
+    <button class="btn-primary" id="btn-next" onclick="hostNext()" style="margin-top:16px">Siguiente →</button>
+    <button class="btn-danger" onclick="hostEndEarly()" style="margin-top:8px">Terminar quiz</button>
+  </div>
+</div>
+<div id="s-host-results" class="screen">
+  <div class="logo" style="font-size:1.5rem">🏆 Resultados</div>
+  <div class="card">
+    <h2 id="host-res-title"></h2>
+    <ul class="leaderboard" id="host-res-lb"></ul>
+    <button class="btn-primary" onclick="showScreen('s-host-setup')" style="margin-top:16px">Nuevo quiz</button>
+    <button class="btn-secondary" onclick="showScreen('s-home')" style="margin-top:8px">Inicio</button>
+  </div>
+</div>
+<div id="s-join" class="screen">
+  <div class="logo" style="font-size:1.5rem">Unirse al quiz</div>
+  <div class="card">
+    <input id="join-pin" placeholder="PIN del quiz (6 dígitos)" maxlength="6" inputmode="numeric">
+    <input id="join-name" placeholder="Tu nombre" maxlength="20">
+    <div id="join-error" class="error"></div>
+    <button class="btn-primary" onclick="playerJoin()">Unirse</button>
+    <button class="btn-secondary" onclick="showScreen('s-home')">Volver</button>
+  </div>
+</div>
+<div id="s-player-waiting" class="screen">
+  <div class="logo" style="font-size:1.5rem">⏳ Esperando...</div>
+  <div class="card" style="text-align:center">
+    <p class="msg" id="player-wait-msg">Conectado. Esperando que el maestro inicie el quiz.</p>
+    <div style="margin-top:16px;font-size:3rem">🎓</div>
+    <p style="margin-top:16px;color:var(--muted)">Jugando como: <strong id="player-name-display"></strong></p>
+  </div>
+</div>
+<div id="s-player-question" class="screen">
+  <div class="card">
+    <div class="q-counter" id="player-q-counter"></div>
+    <div class="timer-bar-wrap"><div class="timer-bar" id="player-timer-bar"></div></div>
+    <div class="q-text" id="player-q-text"></div>
+    <div class="answers-grid" id="player-answers"></div>
+    <p class="msg" id="player-answer-msg" style="margin-top:12px"></p>
+  </div>
+</div>
+<div id="s-player-reveal" class="screen">
+  <div class="card" style="text-align:center">
+    <div id="player-rev-icon" style="font-size:3rem;margin-bottom:8px"></div>
+    <h2 id="player-rev-title"></h2>
+    <p id="player-rev-score" style="color:var(--gold);font-size:1.1rem;margin-bottom:16px"></p>
+    <div id="player-rev-answers" class="answers-grid" style="pointer-events:none;margin-bottom:16px"></div>
+    <p class="msg">Esperando siguiente pregunta...</p>
+  </div>
+</div>
+<div id="s-player-results" class="screen">
+  <div class="logo" style="font-size:1.5rem">🏆 Resultados finales</div>
+  <div class="card">
+    <h2 id="player-res-title"></h2>
+    <ul class="leaderboard" id="player-res-lb"></ul>
+    <button class="btn-primary" onclick="showScreen('s-join')" style="margin-top:16px">Jugar de nuevo</button>
+    <button class="btn-secondary" onclick="showScreen('s-home')" style="margin-top:8px">Inicio</button>
+  </div>
+</div>
+<script>
+let peer=null,hostConn=null,playerConns={},myRole=null,myName='',myPin='',session=null,myAnsweredIndex=null,timerInterval=null;
+
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+function genPin(){return String(Math.floor(100000+Math.random()*900000));}
+
+function saveQuiz(name,questions,pointsPerQ){
+  const quizzes=JSON.parse(localStorage.getItem('quizzes')||'[]');
+  const i=quizzes.findIndex(q=>q.name===name);
+  const e={name,questions,pointsPerQ,savedAt:Date.now()};
+  if(i>=0)quizzes[i]=e;else quizzes.push(e);
+  localStorage.setItem('quizzes',JSON.stringify(quizzes));
+}
+
+function renderSavedQuizzes(){
+  const quizzes=JSON.parse(localStorage.getItem('quizzes')||'[]');
+  const c=document.getElementById('saved-quizzes');
+  if(!quizzes.length){c.innerHTML='<p class="msg">No hay quizzes guardados</p>';return;}
+  c.innerHTML=quizzes.map((q,i)=>`<div class="quiz-entry" onclick="loadQuiz(${i})"><h4>${q.name}</h4><p>${q.questions.length} preguntas &bull; ${q.pointsPerQ} pts c/u</p></div>`).join('');
+}
+
+function loadQuiz(i){
+  const q=JSON.parse(localStorage.getItem('quizzes')||'[]')[i];
+  if(!q)return;
+  document.getElementById('quiz-name').value=q.name;
+  document.getElementById('points-per-q').value=q.pointsPerQ;
+  document.getElementById('questions-json').value=JSON.stringify(q.questions,null,2);
+}
+
+function renderLeaderboard(players,ulId){
+  const s=Object.entries(players).map(([name,p])=>({name,score:p.score})).sort((a,b)=>b.score-a.score);
+  document.getElementById(ulId).innerHTML=s.slice(0,10).map((p,i)=>`<li><span class="lb-rank">${['🥇','🥈','🥉'][i]||(i+1)+'.'}</span><span class="lb-name">${p.name}</span><span class="lb-score">${p.score} pts</span></li>`).join('')||'<li style="color:var(--muted)">Sin jugadores</li>';
+}
+
+function startTimerBar(secs,barId){
+  clearInterval(timerInterval);
+  const bar=document.getElementById(barId);if(!bar)return;
+  bar.style.width='100%';
+  const start=Date.now();
+  timerInterval=setInterval(()=>{
+    const elapsed=(Date.now()-start)/1000;
+    const pct=Math.max(0,100*(1-elapsed/secs));
+    bar.style.width=pct+'%';
+    bar.style.background=pct<30?'var(--red)':pct<60?'var(--gold)':'linear-gradient(90deg,var(--green),var(--gold))';
+    if(pct<=0)clearInterval(timerInterval);
+  },200);
+}
+
+function hostCreate(){
+  const name=document.getElementById('quiz-name').value.trim();
+  const pts=parseInt(document.getElementById('points-per-q').value)||100;
+  const jsonStr=document.getElementById('questions-json').value.trim();
+  const err=document.getElementById('json-error');err.textContent='';
+  if(!name){err.textContent='Ingresa un nombre';return;}
+  let questions;
+  try{
+    questions=JSON.parse(jsonStr);
+    if(!Array.isArray(questions)||!questions.length)throw new Error('JSON vacío');
+    questions.forEach((q,i)=>{if(!q.text||!Array.isArray(q.answers)||q.answers.length<2||typeof q.correct!=='number')throw new Error('Pregunta '+(i+1)+' incompleta');q.time=q.time||20;});
+  }catch(e){err.textContent=e.message||'JSON inválido';return;}
+  saveQuiz(name,questions,pts);
+  myRole='host';myPin=genPin();
+  session={pin:myPin,name,questions,pointsPerQ:pts,currentQ:-1,status:'lobby',players:{},history:[]};
+  if(peer)peer.destroy();
+  peer=new Peer('qc-'+myPin,{debug:0});
+  peer.on('open',()=>{document.getElementById('host-pin').textContent=myPin;showScreen('s-host-lobby');updatePlayerList();});
+  peer.on('connection',(conn)=>{
+    conn.on('open',()=>{conn.on('data',(msg)=>hostHandleMsg(conn,msg));conn.on('close',()=>hostPlayerDisconnect(conn));});
+    conn.on('error',()=>hostPlayerDisconnect(conn));
+  });
+  peer.on('error',(e)=>{err.textContent='Error: '+e.message;});
+}
+
+function hostHandleMsg(conn,msg){
+  if(msg.type==='player:join'){
+    const n=msg.name;
+    playerConns[n]=conn;conn.__playerName=n;
+    session.players[n]={score:0,answeredIndex:null};
+    updatePlayerList();
+    broadcast({type:'player:joined',name:n,count:Object.keys(session.players).length});
+    conn.send({type:'join:ok',name:n});
+  }else if(msg.type==='player:answer'){
+    if(session.status!=='question')return;
+    const p=session.players[conn.__playerName];
+    if(!p||p.answeredIndex!==null)return;
+    p.answeredIndex=msg.index;
+    const v=session.votes||{};v[msg.index]=(v[msg.index]||0)+1;session.votes=v;
+    broadcast({type:'vote:update',votes:v,total:Object.keys(session.players).length});
+    updateHostVotes();
+    document.getElementById('host-vote-count').textContent=Object.values(session.players).filter(p=>p.answeredIndex!==null).length;
+  }
+}
+
+function hostPlayerDisconnect(conn){
+  const n=conn.__playerName;
+  if(n){delete playerConns[n];delete session.players[n];updatePlayerList();}
+}
+
+function broadcast(msg){Object.values(playerConns).forEach(c=>{try{c.send(msg);}catch(e){}});}
+
+function updatePlayerList(){
+  const names=Object.keys(session.players);
+  document.getElementById('player-count').textContent=names.length;
+  document.getElementById('player-list').innerHTML=names.map(n=>`<li>🙋 ${n}</li>`).join('');
+  document.getElementById('btn-start').disabled=names.length===0;
+}
+
+function hostStart(){session.status='started';broadcast({type:'quiz:started'});setTimeout(()=>hostNextQuestion(),500);}
+
+function hostNextQuestion(){
+  session.currentQ++;
+  if(session.currentQ>=session.questions.length){hostEndQuiz();return;}
+  const q=session.questions[session.currentQ];
+  session.status='question';session.votes={};session.timerStart=Date.now();
+  Object.values(session.players).forEach(p=>p.answeredIndex=null);
+  document.getElementById('host-q-counter').textContent='Pregunta '+(session.currentQ+1)+' de '+session.questions.length;
+  document.getElementById('host-q-text').textContent=q.text;
+  document.getElementById('host-vote-count').textContent='0';
+  document.getElementById('host-total-players').textContent=Object.keys(session.players).length;
+  updateHostVotes();startTimerBar(q.time,'host-timer-bar');
+  showScreen('s-host-question');
+  document.getElementById('btn-reveal').disabled=false;
+  broadcast({type:'question:start',index:session.currentQ,total:session.questions.length,question:{text:q.text,answers:q.answers,time:q.time}});
+  session.autoRevealTimer=setTimeout(()=>hostReveal(),q.time*1000);
+}
+
+function updateHostVotes(){
+  const q=session.questions[session.currentQ];if(!q)return;
+  const v=session.votes||{},total=Object.keys(session.players).length||1;
+  document.getElementById('host-votes-display').innerHTML=q.answers.map((a,i)=>{
+    const cnt=v[i]||0,pct=Math.round(cnt/total*100);
+    return `<div class="vote-row"><span class="vote-label">${a}</span><div class="vote-bar-wrap"><div class="vote-bar" style="width:${pct}%;background:${['#7c3aed','#0891b2','#b45309','#065f46'][i]}"></div></div><span class="vote-count">${cnt}</span></div>`;
+  }).join('');
+}
+
+function hostReveal(){
+  if(session.autoRevealTimer){clearTimeout(session.autoRevealTimer);clearInterval(timerInterval);}
+  if(session.status!=='question')return;
+  session.status='reveal';
+  const q=session.questions[session.currentQ];
+  const elapsed=(Date.now()-session.timerStart)/1000;
+  Object.values(session.players).forEach(p=>{
+    if(p.answeredIndex===q.correct){
+      const bonus=Math.round(session.pointsPerQ*(1-Math.min(elapsed,q.time)/q.time*0.5));
+      p.score+=session.pointsPerQ+bonus;
+    }
+  });
+  session.history.push({text:q.text,answers:q.answers,correct:q.correct,votes:{...session.votes},totalPlayers:Object.keys(session.players).length});
+  const lb=Object.entries(session.players).map(([name,p])=>({name,score:p.score})).sort((a,b)=>b.score-a.score);
+  const isLast=session.currentQ>=session.questions.length-1;
+  broadcast({type:'question:reveal',correct:q.correct,votes:session.votes||{},leaderboard:lb,isLast});
+  document.getElementById('host-rev-counter').textContent='Pregunta '+(session.currentQ+1)+' de '+session.questions.length;
+  document.getElementById('host-rev-text').textContent=q.text;
+  document.getElementById('host-rev-answers').innerHTML=q.answers.map((a,i)=>`<button class="ans-btn ${i===q.correct?'correct':'wrong'}">${a}</button>`).join('');
+  renderLeaderboard(session.players,'host-lb');
+  document.getElementById('btn-next').textContent=isLast?'🏆 Ver resultados':'Siguiente →';
+  showScreen('s-host-reveal');
+}
+
+function hostNext(){if(session.currentQ>=session.questions.length-1){hostEndQuiz();return;}hostNextQuestion();}
+
+function hostEndQuiz(){
+  session.status='results';
+  const lb=Object.entries(session.players).map(([name,p])=>({name,score:p.score})).sort((a,b)=>b.score-a.score);
+  broadcast({type:'quiz:results',leaderboard:lb,quizName:session.name});
+  document.getElementById('host-res-title').textContent=session.name+' - Resultados';
+  renderLeaderboard(session.players,'host-res-lb');
+  showScreen('s-host-results');
+  setTimeout(()=>{if(peer)peer.destroy();},60000);
+}
+
+function hostEndEarly(){broadcast({type:'quiz:ended'});if(peer)peer.destroy();peer=null;session=null;playerConns={};showScreen('s-home');}
+
+function playerJoin(){
+  const pin=document.getElementById('join-pin').value.trim();
+  const name=document.getElementById('join-name').value.trim();
+  const err=document.getElementById('join-error');err.textContent='';
+  if(!pin||pin.length!==6){err.textContent='PIN debe tener 6 dígitos';return;}
+  if(!name){err.textContent='Ingresa tu nombre';return;}
+  myRole='player';myName=name;myPin=pin;myAnsweredIndex=null;
+  if(peer)peer.destroy();
+  peer=new Peer(undefined,{debug:0});
+  peer.on('open',()=>{
+    hostConn=peer.connect('qc-'+pin,{reliable:true});
+    hostConn.on('open',()=>{
+      hostConn.send({type:'player:join',name});
+      document.getElementById('player-name-display').textContent=name;
+      document.getElementById('player-wait-msg').textContent='Conectado. Esperando que el maestro inicie el quiz.';
+      showScreen('s-player-waiting');
+    });
+    hostConn.on('data',(msg)=>playerHandleMsg(msg));
+    hostConn.on('close',()=>{document.getElementById('player-wait-msg').textContent='Desconectado.';});
+    hostConn.on('error',()=>{err.textContent='No se pudo conectar. Verifica el PIN.';showScreen('s-join');});
+  });
+  peer.on('error',(e)=>{err.textContent='Error: '+e.message;showScreen('s-join');});
+}
+
+function playerHandleMsg(msg){
+  if(msg.type==='quiz:started'){
+    document.getElementById('player-wait-msg').textContent='¡El quiz ha comenzado!';
+  }else if(msg.type==='question:start'){
+    myAnsweredIndex=null;
+    const q=msg.question;
+    document.getElementById('player-q-counter').textContent='Pregunta '+(msg.index+1)+' de '+msg.total;
+    document.getElementById('player-q-text').textContent=q.text;
+    document.getElementById('player-answer-msg').textContent='';
+    startTimerBar(q.time,'player-timer-bar');
+    document.getElementById('player-answers').innerHTML=q.answers.map((a,i)=>`<button class="ans-btn" onclick="playerAnswer(${i})">${a}</button>`).join('');
+    showScreen('s-player-question');
+  }else if(msg.type==='question:reveal'){
+    clearInterval(timerInterval);
+    const answered=myAnsweredIndex!==null,isCorrect=myAnsweredIndex===msg.correct;
+    document.getElementById('player-rev-icon').textContent=!answered?'⏱️':isCorrect?'✅':'❌';
+    document.getElementById('player-rev-title').textContent=!answered?'No respondiste':isCorrect?'¡Correcto!':'Incorrecto';
+    const myScore=(msg.leaderboard.find(p=>p.name===myName)||{score:0}).score;
+    document.getElementById('player-rev-score').textContent='Tu puntuación: '+myScore+' pts';
+    const btns=Array.from(document.querySelectorAll('#player-answers .ans-btn'));
+    document.getElementById('player-rev-answers').innerHTML=btns.map((b,i)=>`<button class="ans-btn ${i===msg.correct?'correct':i===myAnsweredIndex?'wrong':''}">${b.textContent}</button>`).join('');
+    showScreen('s-player-reveal');
+  }else if(msg.type==='quiz:results'){
+    document.getElementById('player-res-title').textContent=(msg.quizName||'Quiz')+' - Resultados finales';
+    const lb=msg.leaderboard||[];
+    document.getElementById('player-res-lb').innerHTML=lb.map((p,i)=>`<li><span class="lb-rank">${['🥇','🥈','🥉'][i]||(i+1)+'.'}</span><span class="lb-name">${p.name}${p.name===myName?' (tú)':''}</span><span class="lb-score">${p.score} pts</span></li>`).join('');
+    showScreen('s-player-results');
+  }else if(msg.type==='quiz:ended'){showScreen('s-home');}
+}
+
+function playerAnswer(index){
+  if(myAnsweredIndex!==null)return;
+  myAnsweredIndex=index;
+  document.querySelectorAll('#player-answers .ans-btn').forEach((b,i)=>{b.disabled=true;if(i===index)b.classList.add('selected');});
+  document.getElementById('player-answer-msg').textContent='✓ Respuesta enviada';
+  hostConn.send({type:'player:answer',index});
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  renderSavedQuizzes();
+  const quizzes=JSON.parse(localStorage.getItem('quizzes')||'[]');
+  if(!quizzes.length){
+    saveQuiz('Quiz de ejemplo',[
+      {"text":"¿Cuántos planetas tiene el sistema solar?","answers":["7","8","9","10"],"correct":1,"time":20},
+      {"text":"¿Cuál es la capital de Francia?","answers":["Madrid","Londres","París","Berlín"],"correct":2,"time":15},
+      {"text":"¿Cuánto es 7 × 8?","answers":["54","56","58","64"],"correct":1,"time":15}
+    ],100);
+    renderSavedQuizzes();
+  }
+});
+</script>
+</body>
+</html>
