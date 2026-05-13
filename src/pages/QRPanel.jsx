@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import QRCode from 'react-qr-code';
 import { db } from '../firebase';
 import {
-  doc, getDoc, updateDoc, onSnapshot, collection,
+  doc, updateDoc, onSnapshot, collection,
   query, where, orderBy, serverTimestamp
 } from 'firebase/firestore';
 
@@ -124,19 +124,17 @@ export default function QRPanel() {
             <p className="text-xs text-white/70">Clase: {evaluacion.clase}</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => navigate(`/proyector/${evalId}`)}
-            className="bg-usam-gold text-usam-navy px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition"
-          >
-            🖥️ Modo proyector
-          </button>
-        </div>
+        <button
+          onClick={() => navigate(`/proyector/${evalId}`)}
+          className="bg-usam-gold text-usam-navy px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition"
+        >
+          🖥️ Modo proyector
+        </button>
       </header>
 
       <main className="max-w-6xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* QR Panel */}
+
+        {/* Panel QR */}
         <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center">
           <div className="flex items-center gap-3 mb-4 self-start w-full justify-between">
             <h2 className="text-lg font-bold text-usam-navy">Código QR</h2>
@@ -190,7 +188,7 @@ export default function QRPanel() {
 
         {/* Configuración y Estudiantes */}
         <div className="space-y-4">
-          
+
           {/* Config */}
           <div className="bg-white rounded-2xl shadow-lg p-5">
             <h3 className="font-bold text-usam-navy mb-3">⚙️ Configuración del QR</h3>
@@ -233,7 +231,7 @@ export default function QRPanel() {
             <p className="text-xs text-gray-400">{ingresos.length} de {maxEst} máximo</p>
           </div>
 
-          {/* Lista de ingresos */}
+          {/* Lista de ingresos — selfie desde base64 (sin Storage) */}
           <div className="bg-white rounded-2xl shadow-lg p-5 max-h-80 overflow-y-auto">
             <h3 className="font-bold text-usam-navy mb-3">📋 Ingresos en tiempo real</h3>
             {ingresos.length === 0 && (
@@ -243,8 +241,12 @@ export default function QRPanel() {
               {ingresos.map((ing, i) => (
                 <div key={ing.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
                   <span className="text-xs font-mono text-gray-400 w-5">{i + 1}</span>
-                  {ing.selfiePath && (
-                    <img src={ing.selfiePath} className="w-8 h-8 rounded-full object-cover" alt="" />
+                  {ing.selfieBase64 && (
+                    <img
+                      src={ing.selfieBase64}
+                      className="w-8 h-8 rounded-full object-cover"
+                      alt=""
+                    />
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-800 truncate">{ing.nombre}</p>
@@ -261,4 +263,4 @@ export default function QRPanel() {
       </main>
     </div>
   );
-}
+      }
