@@ -1,8 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 
+// Firebase Storage NO se usa — selfies guardadas en base64 en Firestore (sin costo adicional)
 const firebaseConfig = {
   apiKey: "AIzaSyD3VmWEZ_nvZ8sWeJZa7acr2vBn28WynIo",
   authDomain: "quizclass-usam-pro.firebaseapp.com",
@@ -14,6 +14,5 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
-export const storage = getStorage(app);
 export const auth = getAuth(app);
 export default app;
