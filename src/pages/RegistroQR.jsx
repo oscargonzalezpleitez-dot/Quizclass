@@ -1,12 +1,27 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Webcam from 'react-webcam';
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
 import {
-  doc, getDoc, addDoc, updateDoc, collection,
+  doc, addDoc, updateDoc, collection,
   increment, serverTimestamp, getDocs, query, where
 } from 'firebase/firestore';
-import { ref as storageRef, uploadString, getDownloadURL } from 'firebase/storage';
+
+// ─── Comprime selfie a base64 pequeño (sin Firebase Storage) ───────────────
+function comprimirSelfie(dataUrl, maxWidth = 200, calidad = 0.5) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const scale = Math.min(1, maxWidth / img.width);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', calidad));
+    };
+    img.src = dataUrl;
+  });
+}
 
 function getDeviceFingerprint() {
   const { userAgent, language, hardwareConcurrency, platform } = navigator;
@@ -31,7 +46,7 @@ export default function RegistroQR() {
 
   const [evaluacion, setEvaluacion] = useState(null);
   const [error, setError] = useState('');
-  const [paso, setPaso] = useState('validando'); // validando | formulario | selfie | procesando | listo | expirado | invalido
+  const [paso, setPaso] = useState('validando');
   const [nombre, setNombre] = useState('');
   const [carnet, setCarnet] = useState('');
   const [correo, setCorreo] = useState('');
@@ -52,7 +67,11 @@ export default function RegistroQR() {
     const ev = { id: snap.docs[0].id, ...snap.docs[0].data() };
     setEvaluacion(ev);
 
-    if (!ev.qrActivo) { setPaso('invalido'); setError('El QR no está activo. Espera que el docente lo active.'); return; }
+    if (!ev.qrActivo) {
+      setPaso('invalido');
+      setError('El QR no está activo. Espera que el docente lo active.');
+      return;
+    }
 
     if (ev.expiraEn) {
       const exp = ev.expiraEn.toDate ? ev.expiraEn.toDate() : new Date(ev.expiraEn);
@@ -61,7 +80,8 @@ export default function RegistroQR() {
 
     // Verificar duplicado por dispositivo
     const fp = getDeviceFingerprint();
-    const dupQ = query(collection(db, 'ingresos'),
+    const dupQ = query(
+      collection(db, 'ingresos'),
       where('evalId', '==', ev.id),
       where('deviceFingerprint', '==', fp)
     );
@@ -94,31 +114,29 @@ export default function RegistroQR() {
 
     try {
       const fp = getDeviceFingerprint();
+
       // Asignar variante balanceada
-      const ingSnap = await getDocs(query(collection(db, 'ingresos'), where('evalId', '==', evaluacion.id)));
+      const ingSnap = await getDocs(
+        query(collection(db, 'ingresos'), where('evalId', '==', evaluacion.id))
+      );
       const variante = VARIANTES[ingSnap.size % VARIANTES.length];
 
-      // Subir selfie a Firebase Storage
-      let selfiePath = '';
-      try {
-        const selfieRef = storageRef(storage, `selfies/${evaluacion.id}/${fp}-${Date.now()}.jpg`);
-        await uploadString(selfieRef, selfie, 'data_url');
-        selfiePath = await getDownloadURL(selfieRef);
-      } catch {}
+      // Comprimir selfie a ~30-50KB (sin Storage, guardada en Firestore)
+      const selfieComprimida = await comprimirSelfie(selfie, 200, 0.45);
 
-      // Crear ingreso
+      // Crear ingreso con selfie en base64
       const ingresoRef = await addDoc(collection(db, 'ingresos'), {
         evalId: evaluacion.id,
         nombre: nombre.trim(),
         carnet: carnet.trim(),
         correo: correo.trim().toLowerCase(),
         variante,
-        selfiePath,
+        selfieBase64: selfieComprimida,   // ← guardado en Firestore, sin Storage
         deviceFingerprint: fp,
         timestamp: serverTimestamp(),
       });
 
-      // Actualizar contador
+      // Actualizar contador en la evaluación
       await updateDoc(doc(db, 'evaluaciones', evaluacion.id), {
         estudiantesConectados: increment(1),
       });
@@ -162,7 +180,7 @@ export default function RegistroQR() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-usam-navy via-usam-blue to-usam-surf flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        
+
         <div className="bg-usam-navy px-6 py-5 text-white text-center">
           <p className="text-xs text-white/60 uppercase tracking-wider mb-1">USAM — Plataforma de Evaluaciones</p>
           <h1 className="text-xl font-bold">{evaluacion?.nombre}</h1>
