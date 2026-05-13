@@ -8,14 +8,20 @@ export default {
     extend: {
       colors: {
         usam: {
-          blue: '#002E66',
-          'blue-light': '#0047A0',
-          gold: '#C8922A',
-          'gold-light': '#F0B429',
-        }
+          navy:  '#002E66',
+          blue:  '#0047A0',
+          surf:  '#005BBB',
+          gold:  '#C8922A',
+          light: '#F0B429',
+        },
+        'usam-navy':  '#002E66',
+        'usam-blue':  '#0047A0',
+        'usam-surf':  '#005BBB',
+        'usam-gold':  '#C8922A',
+        'usam-light': '#F0B429',
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Nunito', 'sans-serif'],
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
