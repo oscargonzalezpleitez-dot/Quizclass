@@ -1,14 +1,15 @@
 import { defineConfig } from 'vite'
-  import react from '@vitejs/plugin-react'
+import react from '@vitejs/plugin-react'
 
-  export default defineConfig({
+export default defineConfig({
+    base: '/Quizclass/',
     plugins: [react()],
-        server: {
-    port: 5173,
+    server: {
+          port: 5173,
           host: true
-      },
-        build: {
-    outDir: 'dist',
+    },
+    build: {
+          outDir: 'dist',
           sourcemap: false
-      }
-    })
+    }
+})
